@@ -1,0 +1,5 @@
+{
+  "v": 1,
+  "note": "Bootstrap pins (sha256 of connector bundles this plugin trusts without a signature): for an offline or local connector-<v>.tgz install. The public channel needs none: its stable.json is signed with the release key in release_keys.py.",
+  "pins": []
+}

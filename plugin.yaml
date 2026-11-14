@@ -1,0 +1,50 @@
+manifest_version: 1
+name: muxie
+version: "0.1.0"
+description: "Muxie for Hermes: /muxie and `hermes muxie` install, pair and check the Muxie connector; its agent tools as native tools; id-only lifecycle signals to the local connector."
+author: Muxie
+kind: standalone
+requires_hermes: ">=0.22.6"
+provides_hooks:
+  - pre_llm_call
+  - post_llm_call
+  - on_session_start
+  - on_session_end
+  - agent_loop_stopped
+  - pre_auxiliary_call
+  - post_auxiliary_call
+  - post_compaction
+  - subagent_start
+  - subagent_stop
+# muxie_status is always registered (it is what puts the `muxie` toolset into saved platform_toolsets lists at
+# install). The other muxie_* tools come from the connector's tools.json at load (CONTRACT.md §3): the stable names of
+# connector/src/agent-tools/catalogue.ts TOOL_GROUPS (a connector unit pins that this list matches it).
+provides_tools:
+  - muxie_status
+  - muxie_context
+  - muxie_space
+  - muxie_chats
+  - muxie_app
+  - muxie_records
+  - muxie_widget
+config_schema:
+  channel_url:
+    type: str
+    default: ""
+    description: "Where the connector release comes from: a signed channel manifest (stable.json + stable.json.sig), or a file:// connector-<v>.tgz whose sha256 is pinned in bundle_sha256. Empty = the public signed channel, the latest GitHub release of vaurdan/hermes-muxie."
+  bundle_sha256:
+    type: str
+    default: ""
+    description: "A connector bundle sha256 you trust (pins the bundle; required for a local tgz channel, enforced on top of a signed channel)."
+  relay_url:
+    type: str
+    default: ""
+    description: "Required: the relay the connector dials, e.g. wss://<your relay> (passed to `muxie-connector setup --relay-url`). No relay is built in; empty = RELAY_URL in connector.env, else /muxie pair refuses."
+  muxie_home:
+    type: str
+    default: ""
+    description: "Moves every Muxie dir (like MUXIE_HOME); for tests and labs."
+  node:
+    type: str
+    default: ""
+    description: "Node.js 22+ for the connector; empty = Muxie's own, then Hermes', then PATH."
