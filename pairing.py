@@ -46,11 +46,12 @@ TOO_OLD_CHAT = ("This connector is too old to pair from the machine; update it (
 
 
 def normalize_code(raw: str) -> Optional[str]:
-    """``k7qf 9m2t-xr4d`` → ``K7QF-9M2T-XR4D``; None unless it is 12 letters/digits (the connector checks it again)."""
+    """``k7qf 9m2t-xr4d-ab12`` → ``K7QF-9M2T-XR4D-AB12``; None unless it is 16 letters/digits (code v2) or 12 (v1, from
+    an app or connector not updated yet). The connector checks it again."""
     s = CODE_CHARS.sub("", raw or "").upper()
-    if len(s) != 12:
+    if len(s) not in (12, 16):
         return None
-    return f"{s[0:4]}-{s[4:8]}-{s[8:12]}"
+    return "-".join(s[i:i + 4] for i in range(0, len(s), 4))
 
 
 # The surfaces that dispatch a command with no SessionSource: the classic CLI (``cli.py``) and the local session

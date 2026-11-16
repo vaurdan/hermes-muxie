@@ -191,7 +191,7 @@ class MuxiePlugin:
             return self.chat_pair_host()
         code = pairing.normalize_code(" ".join(rest))
         if code is None:
-            return "That is not a pairing code (12 letters/digits, like K7QF-9M2T-XR4D). Usage: /muxie pair <CODE>"
+            return "That is not a pairing code (16 letters/digits, like K7QF-9M2T-XR4D-AB12). Usage: /muxie pair <CODE>"
         return self.chat_job("Muxie · pairing this machine", self.options(code=code), secrets=(code,))
 
     # ── host-initiated pairing (S6) ───────────────────────────────────────
@@ -315,7 +315,7 @@ class MuxiePlugin:
             return False, f"Usage: /muxie {sub} <CODE>"
         code = pairing.normalize_code(" ".join(rest))
         if code is None:
-            return False, f"That is not a pairing code (12 letters/digits, like K7QF-9M2T-XR4D). Usage: /muxie {sub} <CODE>"
+            return False, f"That is not a pairing code (16 letters/digits, like K7QF-9M2T-XR4D-AB12). Usage: /muxie {sub} <CODE>"
         layout = self.layout()
         if not local_api.endpoints(layout):
             return False, pairing.NOT_RUNNING
@@ -448,7 +448,7 @@ class MuxiePlugin:
             if cmd == "pair":
                 code = pairing.normalize_code(" ".join(args.code)) or ""
                 if not code:
-                    out("That is not a pairing code (12 letters/digits, like K7QF-9M2T-XR4D).")
+                    out("That is not a pairing code (16 letters/digits, like K7QF-9M2T-XR4D-AB12).")
                     return 2
             opts = self.options(code=code)
             if cmd == "setup":

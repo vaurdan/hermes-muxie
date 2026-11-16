@@ -23,7 +23,10 @@ class PairingTest(unittest.TestCase):
     def test_normalize_code(self):
         self.assertEqual(pairing.normalize_code("k7qf 9m2t-xr4d"), "K7QF-9M2T-XR4D")
         self.assertEqual(pairing.normalize_code("K7QF9M2TXR4D"), "K7QF-9M2T-XR4D")
-        for bad in ("", "K7QF-9M2T", "K7QF-9M2T-XR4D-1", "../../etc"):
+        # Code v2 (security audit F2): 16 symbols; v1 above is still read from apps and connectors not updated yet.
+        self.assertEqual(pairing.normalize_code("k7qf 9m2t-xr4d-ab12"), "K7QF-9M2T-XR4D-AB12")
+        self.assertEqual(pairing.normalize_code("K7QF9M2TXR4DAB12"), "K7QF-9M2T-XR4D-AB12")
+        for bad in ("", "K7QF-9M2T", "K7QF-9M2T-XR4D-1", "K7QF-9M2T-XR4D-AB1", "K7QF-9M2T-XR4D-AB12-C", "../../etc"):
             self.assertIsNone(pairing.normalize_code(bad), bad)
 
     def test_private_chat_only(self):

@@ -23,7 +23,7 @@ from .layout import Layout, connector_id
 
 # Straight to 127.0.0.1: never through a proxy from the environment.
 _OPENER = urllib.request.build_opener(urllib.request.ProxyHandler({}))
-PLUGIN_VERSION = "0.1.0"
+PLUGIN_VERSION = "0.1.1"
 MAX_ANSWER = 1024 * 1024
 
 

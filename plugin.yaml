@@ -1,6 +1,6 @@
 manifest_version: 1
 name: muxie
-version: "0.1.0"
+version: "0.1.1"
 description: "Muxie for Hermes: /muxie and `hermes muxie` install, pair and check the Muxie connector; its agent tools as native tools; id-only lifecycle signals to the local connector."
 author: Muxie
 kind: standalone
