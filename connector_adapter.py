@@ -207,7 +207,7 @@ class SignatureCheck:
     test_key: bool = False
 
 
-def verify_manifest_signature(manifest: bytes, signature: Optional[bytes], keys: Optional[Iterable[dict]] = None) -> SignatureCheck:
+def verify_manifest_signature(manifest: bytes, signature: Optional[bytes], keys: Optional[Iterable[dict]] = None, *, channel: str = "stable") -> SignatureCheck:
     """The release channel's Ed25519 check, in this (trusted) Python process, BEFORE anything from the channel runs.
 
     ``stable.json.sig`` = ``{"alg":"ed25519","keyId","sig"}``, a raw Ed25519 signature over the manifest's exact bytes
@@ -225,7 +225,8 @@ def verify_manifest_signature(manifest: bytes, signature: Optional[bytes], keys:
         raw_sig = base64.b64decode(b64, validate=True)
     except Exception:
         return SignatureCheck(False, 'the signature file is not {"alg":"ed25519","keyId","sig"}')
-    trusted = list(release_keys.RELEASE_KEYS if keys is None else keys)
+    embedded = release_keys.EDGE_RELEASE_KEYS if channel == "edge" else release_keys.RELEASE_KEYS
+    trusted = list(embedded if keys is None else keys)
     entry = next((k for k in trusted if k.get("keyId") == kid), None)
     if entry is None:
         return SignatureCheck(False, f"signed by a key this plugin does not trust ({kid}; trusted: "

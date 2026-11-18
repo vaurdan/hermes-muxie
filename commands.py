@@ -237,13 +237,24 @@ class MuxiePlugin:
         if handle is None:  # this surface cannot edit a message: answer with the code, do not block
             return _fit(pairing.no_post_text(slot))
         shown = pairing.code_text(slot)
+        renew_until = time.time() + 3600
 
         def fallback(text: str) -> None:
-            # ONE message (owner decision, 2026-11-13): the card got no answer, so the code message itself carries the typed answer.
             _edit(handle, shown + "\n\n" + text)
 
-        final = pairing.follow_host_pairing(slot, call, self.ctx.ask_choice, fallback,
-                                            superseded=lambda: self._host_gen != gen)
+        while True:
+            final = pairing.follow_host_pairing(slot, call, self.ctx.ask_choice, fallback,
+                                                superseded=lambda: self._host_gen != gen)
+            if final.state != "expired" or not final.renewable or final.claimed or final.expires_at > time.time() or time.time() >= renew_until or self._host_gen != gen:
+                break
+            stopped_at = final.expires_at or slot.expires_at
+            try:
+                slot = pairing.start_host_initiated(call)
+            except pairing.HostInitiatedUnavailable as e:
+                _edit(handle, f"Could not renew pairing: {e}. Nothing was paired.")
+                return "The result is in the message above."
+            shown = pairing.code_text(slot) + "\n\nNew code · the last one stopped at " + pairing.clock_text(stopped_at) + "."
+            _edit(handle, shown)
         _edit(handle, pairing.end_text(final.state, device=final.device, machine=slot.machine, code=slot.code,
                                        error=final.error))
         return "The result is in the message above."

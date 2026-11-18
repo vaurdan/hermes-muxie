@@ -337,7 +337,7 @@ def resolve_channel(channel: str, pins: Optional[Pins] = None) -> Artifact:
             sig = _fetch_small(channel + ".sig", 64 * 1024)
         except (OSError, BootstrapError, ValueError):
             sig = None
-        check = ca.verify_manifest_signature(raw, sig)
+        check = ca.verify_manifest_signature(raw, sig, channel=name[:-len(".json")])
         if check.ok is False:
             raise BootstrapError(f"the channel manifest is refused: {check.reason}")
         try:

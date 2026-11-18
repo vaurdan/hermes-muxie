@@ -411,6 +411,47 @@ class HostPairingChatTest(unittest.TestCase):
                 self.assertEqual(ctx.posts[0].texts, [CODE_MESSAGE, pairing.end_text(state, device="", machine="box", code=CODE, error=error or "")])
         self.assertIn(f"The code {CODE} expired after 10 minutes", pairing.end_text("expired", code=CODE))
 
+    def test_unclaimed_expiry_renews_the_code_in_the_same_message(self):
+        starts = []
+        next_code = "ABCD-EFGH-JKLM"
+
+        def start(rec):
+            starts.append(rec)
+            return 200, {"ok": True, "v": 1, "slot": "s1" if len(starts) == 1 else "s2",
+                         "code": CODE if len(starts) == 1 else next_code,
+                         "link": LINK if len(starts) == 1 else "https://chat.muxie.sh/pair#" + next_code,
+                         "fingerprint": "AB12 CD34 EF56", "machine": "box",
+                         "expiresAt": int((time.time() - 1 if len(starts) == 1 else time.time() + 600) * 1000)}
+
+        self.ep.routes["/v1/pair/start"] = start
+        expired_status, expired_body = state_answer("expired", 1, expires_ms=int((time.time() - 1) * 1000))
+        expired_body["renewable"] = True  # new relay observes claims; old relays must never renew blindly
+        self.states = [(expired_status, expired_body), state_answer("paired", 2, device="Pixel 9", expires_ms=self.expires_ms)]
+        ctx, p = self.plugin()
+        p.slash("pair")
+        self.assertEqual(len(starts), 2)
+        self.assertEqual(len(ctx.posts), 1)
+        self.assertEqual(len(ctx.posts[0].texts), 3)
+        self.assertIn(next_code, ctx.posts[0].texts[1])
+        self.assertIn("New code · the last one stopped at", ctx.posts[0].texts[1])
+        self.assertEqual(ctx.posts[0].texts[-1], "Paired with Pixel 9.")
+
+    def test_claimed_expiry_never_renews(self):
+        status, body = state_answer("expired", 1, expires_ms=int((time.time() - 1) * 1000))
+        body["claimed"] = True
+        self.states = [(status, body)]
+        ctx, p = self.plugin()
+        p.slash("pair")
+        self.assertEqual(len([r for r in self.ep.got if r["path"] == "/v1/pair/start"]), 1)
+        self.assertEqual(len(ctx.posts[0].texts), 2)
+
+    def test_old_relay_without_claim_signal_never_renews(self):
+        self.states = [state_answer("expired", 1, expires_ms=int((time.time() - 1) * 1000))]
+        ctx, p = self.plugin()
+        p.slash("pair")
+        self.assertEqual(len([r for r in self.ep.got if r["path"] == "/v1/pair/start"]), 1)
+        self.assertEqual(len(ctx.posts[0].texts), 2)
+
     def test_a_newer_pair_replaces_the_older_one(self):
         gate = threading.Event()
         calls = []

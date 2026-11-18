@@ -108,6 +108,8 @@ class PairState:
     request: Optional[DeviceRequest] = None
     error: str = ""
     device: str = ""
+    claimed: bool = False
+    renewable: bool = False
 
     @property
     def final(self) -> bool:
@@ -179,7 +181,7 @@ def wait_state(endpoint_call: EndpointCall, slot: str, after: int = -1, wait: in
         slot, _text(a.get("state"), 20) or "failed",
         version if isinstance(version, int) and not isinstance(version, bool) else after,
         float(expires) / 1000.0 if isinstance(expires, (int, float)) and not isinstance(expires, bool) else 0.0,
-        _request_of(a.get("request")), _text(a.get("error"), 300), _text(a.get("device"), 100))
+        _request_of(a.get("request")), _text(a.get("error"), 300), _text(a.get("device"), 100), bool(a.get("claimed")), a.get("renewable") is True)
 
 
 @dataclass(frozen=True)
@@ -316,13 +318,17 @@ def follow_host_pairing(slot: PairingSlot, endpoint_call: EndpointCall,
     after = -1
     device = ""
     asked: set = set()
+    claimed = False
+    renewable = False
     while True:
         if clock() > slot.expires_at + END_GRACE_S:
-            return PairState(slot.slot, "expired", after, slot.expires_at, device=device)
+            return PairState(slot.slot, "expired", after, slot.expires_at, device=device, claimed=claimed, renewable=renewable)
         try:
             st = wait_state(endpoint_call, slot.slot, after, sleep=sleep)
         except HostInitiatedUnavailable as e:
             return PairState(slot.slot, "failed", after, slot.expires_at, error=str(e), device=device)
+        renewable = st.renewable
+        claimed = claimed or st.claimed or st.state == "asking"
         if st.request:
             device = st.request.device_name
         if st.state == "unknown":
@@ -332,7 +338,7 @@ def follow_host_pairing(slot: PairingSlot, endpoint_call: EndpointCall,
                              error="the connector no longer knows this pairing (it may have restarted)")
         after = st.version
         if st.final:
-            return replace(st, device=st.device or device)
+            return replace(st, device=st.device or device, claimed=claimed)
         if st.state == "asking" and st.request and st.request.request_id not in asked:
             asked.add(st.request.request_id)  # one card per request, never asked again
             pick = confirm_device(st.request, ask_choice)

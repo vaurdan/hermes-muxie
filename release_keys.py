@@ -1,7 +1,7 @@
 """The Ed25519 keys a release channel manifest must be signed with before the plugin installs anything from it.
 
 The same list as the connector's ``connector/src/release-keys.ts`` (dist-s2s3): keyId = the first 16 hex characters of
-sha256(the 32-byte raw public key). The release key ``muxie-release-2026-11`` is the only key the plugin trusts; its
+sha256(the 32-byte raw public key). Stable trusts ``muxie-release-2026-11``; explicit edge JSON URLs use EDGE_RELEASE_KEYS. The
 private half never enters the repo. The TEST key of the lab channels (7d4b06d8cc0d45ab) is a test fixture only
 (``tests/fixtures/test-release-key.json``; a lab copy of the plugin is rewritten to trust it with
 ``test/dist/lab/test-key.ts plugin <copy>``). An entry with ``"test": True`` is labelled «not a release» at bootstrap.
@@ -16,6 +16,13 @@ import hashlib
 RELEASE_KEYS: tuple = (
     {"keyId": "0641c4073af01b9e", "publicKey": "7PaERoStM2Oo+iOPS4ZmH/qwHDxAbaP/c6qCOQ2v6aw=",
      "name": "muxie-release-2026-11"},
+)
+
+
+# Only explicit edge manifest URLs use this key; stable trust is unchanged.
+EDGE_RELEASE_KEYS: tuple = (
+    {"keyId": "680bfd044fde1b43", "publicKey": "2gPFdnri6Zrt0rrJRECYijADVup1YQRUoEBzrT0BaBw=",
+     "name": "muxie-edge-2026-11"},
 )
 
 

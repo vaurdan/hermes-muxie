@@ -45,6 +45,26 @@ class Ed25519Test(unittest.TestCase):
         self.assertFalse(ed.verify(pk[:31], b"", sig))
         self.assertFalse(ed.verify(pk, b"", sig[:63]))
 
+    def test_edge_public_key_and_scoped_lab_signature(self):
+        from unittest.mock import patch
+        self.assertEqual(rk.EDGE_RELEASE_KEYS[0]["keyId"], "680bfd044fde1b43")
+        self.assertEqual(rk.key_id(rk.raw_key(rk.EDGE_RELEASE_KEYS[0])), "680bfd044fde1b43")
+        pub, sign = ed_keypair_and_signer(bytes(range(32)))
+        lab = {"keyId": rk.key_id(pub), "publicKey": base64.b64encode(pub).decode(), "name": "LAB-edge"}
+        raw = json.dumps({"schema": 1, "channel": "edge", "version": "0.1.42", "bundle": {"url": "connector-0.1.42.tgz", "sha256": "a" * 64}}).encode()
+        sig = json.dumps({"alg": "ed25519", "keyId": lab["keyId"], "sig": base64.b64encode(sign(raw)).decode()}).encode()
+        self.assertIs(ca.verify_manifest_signature(raw, sig, channel="edge").ok, False)
+        with patch.object(rk, "EDGE_RELEASE_KEYS", (lab,)):
+            self.assertIs(ca.verify_manifest_signature(raw, sig, channel="edge").ok, True)
+            self.assertIs(ca.verify_manifest_signature(raw, sig).ok, False)
+            d = temp_dir("edge-bootstrap")
+            try:
+                (d / "edge.json").write_bytes(raw)
+                (d / "edge.json.sig").write_bytes(sig)
+                self.assertEqual(bootstrap.resolve_channel((d / "edge.json").as_uri()).version_hint, "0.1.42")
+            finally:
+                rm(d)
+
     def test_test_signer_matches_rfc(self):
         pub, sign = ed_keypair_and_signer(bytes.fromhex("9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60"))
         self.assertEqual(pub.hex(), "d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a")
